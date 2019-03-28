@@ -1,5 +1,8 @@
-node_modules
-tmp
-source
+/node_modules
+/tmp
+/source
 npm-debug.log
-.idea
+/.idea
+/.vscode
+package-lock.json
+yarn.lock
