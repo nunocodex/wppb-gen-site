@@ -23,13 +23,15 @@ app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
 app.use(express.static(__dirname + '/public'));
-app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.urlencoded({
+  extended: true
+}));
 
 app
   .route(
     '/.well-known/acme-challenge/miU-q9A8ox1btoayRB8tM6wcWPisl42aR4wnixiK2UU'
   )
-  .get(function(req, res) {
+  .get(function (req, res) {
     res.send(
       'miU-q9A8ox1btoayRB8tM6wcWPisl42aR4wnixiK2UU.9s9UoMhX5iRzhJpZG6oAd-7PRFIBTPxbwd7nVTPfGcM'
     );
@@ -38,56 +40,36 @@ app
 app
   .route('/')
   //GET REQUEST DRAW THE HOME PAGE
-  .get(function(req, res) {
+  .get(function (req, res) {
     res.send('Please visit <a href="https://wppb.me">https://wppb.me</a>');
     //res.redirect('https://wppb.me');
   }) // END GET ROUTE
 
-  .post(function(req, res) {
+  .post(function (req, res) {
     var origin = process.cwd() + '/source/';
-    var pluginSlug = '';
-    var pluginName = '';
-    var pluginURI = '';
-    var pluginAuthor = '';
-    var pluginAuthorURI = '';
-    var pluginDescription = '';
-    var pluginNamePackage = '';
-    var pluginNameInstance = '';
-    var pluginAuthorEmail = '';
-    var pluginAuthorFull = '';
-    var pluginNameVersion = '';
-    var destination = '';
+
+    var plugin_slug = String(data.slug).toLowerCase();
+    var plugin_name = String(data.name);
+    var plugin_uri = String(data.uri);
+    var plugin_description = String(data.description);
+    var plugin_version = (plugin_instance + '_VERSION').toUpperCase();
+
+    var plugin_package = capitalize(plugin_slug);
+    var plugin_instance = plugin_slug.replace(/-/gi, '_');
+
+    var plugin_author = String(data.author.name);
+    var plugin_author_uri = String(data.author.uri);
+    var plugin_author_email = String(data.author.email);
+    var plugin_author_full = plugin_author + ' <' + plugin_author_email + '>';
+
+    var destination = process.cwd() + '/tmp/' + plugin_slug + '-' + new Date().getTime();
     var data = req.body;
-    var visitor = ua('UA-56742268-1');
+    var visitor = ua('UA-XXXXXXXX-1');
 
     //Track Event
     visitor.event('build', 'click', 'download', 1).send();
-    // ALL FIELDS REQUIRED IF EMPTY SET DEFAULT VALUES
-    pluginSlug = String(data.slug).length
-      ? String(data.slug).toLowerCase()
-      : 'amazing-plugin';
-    pluginName = String(data.name).length ? data.name : 'Amazing Plugin';
-    pluginURI = String(data.uri).length
-      ? data.uri
-      : 'http://example.com/amazing-plugin-uri/';
-    pluginAuthor = String(data.author.name).length
-      ? data.author.name
-      : 'Plugin Author';
-    pluginAuthorURI = String(data.author.uri).length
-      ? data.author.uri
-      : 'http://mydomain.tld';
-    pluginAuthorEmail = String(data.author.email).length
-      ? data.author.email
-      : 'my@email.tld';
-    pluginNamePackage = capitalize(pluginSlug);
-    pluginNameInstance = pluginSlug.replace(/-/gi, '_');
-    pluginNameVersion = (pluginNameInstance + '_VERSION').toUpperCase();
-    pluginAuthorFull = pluginAuthor + ' <' + pluginAuthorEmail + '>';
 
-    destination =
-      process.cwd() + '/tmp/' + pluginSlug + '-' + new Date().getTime();
-
-    fs.copy(origin, destination, function(err) {
+    fs.copy(origin, destination, function (err) {
       if (err) {
         console.error(err);
 
@@ -95,121 +77,110 @@ app
       }
 
       //RENAME THE MAIN PLUGIN DIRECTORY
-      fs.renameSync(
-        destination + '/plugin-name',
-        destination + '/' + pluginSlug
-      );
+      fs.renameSync(destination + '/__PLUGIN_FILENAME__', destination + '/' + plugin_slug);
 
       //FIND AND REPLACE FILES NAMES
-      walker(destination + '/' + pluginSlug, function(err, files) {
+      walker(destination + '/' + plugin_slug, function (err, files) {
         if (err) {
           console.error(err);
 
           return;
         }
 
-        files.forEach(function(file) {
+        files.forEach(function (file) {
           var newName;
-          var re = /plugin-name/gi;
-          newName = file.replace(re, pluginSlug);
+          var re = /__PLUGIN_FILENAME__/gi;
+
+          newName = file.replace(re, plugin_slug);
           fs.renameSync(file, newName);
         });
 
         // Plugin URI
         replace({
-          regex: 'http://example.com/plugin-name-uri/',
-          replacement: pluginURI,
-          paths: [destination + '/' + pluginSlug + '/' + pluginSlug + '.php'],
+          regex: '__PLUGIN_URI__',
+          replacement: plugin_uri,
+          paths: [destination + '/' + plugin_slug + '/' + plugin_slug + '.php'],
           recursive: false,
           silent: true
         });
 
         // Plugin Name
         replace({
-          regex: 'WordPress Plugin Boilerplate',
-          replacement: pluginName,
-          paths: [destination + '/' + pluginSlug + '/' + pluginSlug + '.php'],
-          recursive: true,
-          silent: true
-        });
-
-        //Plugin URI
-        replace({
-          regex: 'http://example.com/plugin-name-uri/',
-          replacement: pluginURI,
-          paths: [destination + '/' + pluginSlug + '/' + pluginSlug + '.php'],
+          regex: '__PLUGIN_NAME__',
+          replacement: plugin_name,
+          paths: [destination + '/' + plugin_slug + '/' + plugin_slug + '.php'],
           recursive: true,
           silent: true
         });
 
         //find Plugin Author
         replace({
-          regex: 'Your Name or Your Company',
-          replacement: pluginAuthor,
-          paths: [destination + '/' + pluginSlug + '/' + pluginSlug + '.php'],
+          regex: '__PLUGIN_AUTHOR_NAME__',
+          replacement: plugin_author,
+          paths: [destination + '/' + plugin_slug + '/' + plugin_slug + '.php'],
           recursive: true,
           silent: true
         });
 
         //find Plugin Author Full
         replace({
-          regex: 'Your Name <email@example.com>',
-          replacement: pluginAuthorFull,
-          paths: [destination + '/' + pluginSlug],
+          regex: '__PLUGIN_AUTHOR_FULL__',
+          replacement: plugin_author_full,
+          paths: [destination + '/' + plugin_slug],
           recursive: true,
           silent: true
         });
 
-        //find Plugin_Name
+        //find Plugin Name
         replace({
-          regex: 'Plugin_Name',
-          replacement: pluginNamePackage,
-          paths: [destination + '/' + pluginSlug],
+          regex: '__PLUGIN_NAME__',
+          replacement: plugin_package,
+          paths: [destination + '/' + plugin_slug],
+          recursive: true,
+          silent: true
+        });
+
+        //find Plugin Description
+        replace({
+          regex: '__PLUGIN_DESCRIPTION__',
+          replacement: plugin_description,
+          paths: [destination + '/' + plugin_slug],
           recursive: true,
           silent: true
         });
 
         //find Plugin slug
         replace({
-          regex: 'plugin-name',
-          replacement: pluginSlug,
-          paths: [destination + '/' + pluginSlug],
+          regex: '__PLUGIN_SLUG__',
+          replacement: plugin_slug,
+          paths: [destination + '/' + plugin_slug],
           recursive: true,
           silent: true
         });
 
         //find Author URI
         replace({
-          regex: 'http://example.com/?',
-          replacement: pluginAuthorURI,
-          paths: [destination + '/' + pluginSlug],
+          regex: '__PLUGIN_AUTHOR_URI__',
+          replacement: plugin_author_uri,
+          paths: [destination + '/' + plugin_slug],
           recursive: true,
           silent: true
         });
 
         //find Plugin Version
         replace({
-          regex: 'PLUGIN_NAME_VERSION',
-          replacement: pluginNameVersion,
-          paths: [destination + '/' + pluginSlug],
-          recursive: true,
-          silent: true
-        });
-        //find Author URI
-        replace({
-          regex: 'plugin_name',
-          replacement: pluginNameInstance,
-          paths: [destination + '/' + pluginSlug + '/' + pluginSlug + '.php'],
+          regex: '__PLUGIN_VERSION__',
+          replacement: plugin_version,
+          paths: [destination + '/' + plugin_slug],
           recursive: true,
           silent: true
         });
 
         //Replace done ZIP it
-
         var zip = new EasyZip();
 
-        zip.zipFolder(destination + '/' + pluginSlug, function() {
-          zip.writeToResponse(res, pluginSlug);
+        zip.zipFolder(destination + '/' + plugin_slug, function () {
+          zip.writeToResponse(res, plugin_slug);
         });
       });
     });
@@ -220,7 +191,7 @@ app
  */
 var job = new CronJob(
   '30 1 * * *',
-  function() {
+  function () {
     //GET FRESH CODE
     getSourceCode();
   },
@@ -236,9 +207,9 @@ job.start();
 
 var clean = new CronJob(
   '0 * * * *',
-  function() {
+  function () {
     var destination = process.cwd() + '/tmp/';
-    rimraf(destination, function() {});
+    rimraf(destination, function () {});
   },
   true,
   'America/Los_Angeles'
@@ -249,9 +220,9 @@ clean.start();
 /**
  * GET PLUGIN CODE FROM GITHUB
  */
-var getSourceCode = function() {
+var getSourceCode = function () {
   var repo = {
-    user: 'DevinVinson',
+    user: 'NunoCodex',
     repo: 'WordPress-Plugin-Boilerplate',
     ref: 'master'
   };
@@ -259,19 +230,19 @@ var getSourceCode = function() {
   var destination = process.cwd() + '/source/';
 
   //DELETE OLD CODE
-  rimraf(destination, function() {});
+  rimraf(destination, function () {});
 
   //GET THE NEW CODE FORM THE REPO
   ghdownload(repo, destination)
-    .on('zip', function(zipUrl) {
+    .on('zip', function (zipUrl) {
       console.log('zip: ' + zipUrl);
     })
 
-    .on('error', function(err) {
+    .on('error', function (err) {
       console.error('error ' + err);
     })
 
-    .on('end', function() {
+    .on('end', function () {
       console.log('Finish Github Download ');
     });
 };
@@ -279,10 +250,10 @@ var getSourceCode = function() {
 /**
  * RECURSIVE WALKER TO GET ALL THE FILES IN DIRECTORY
  */
-var walker = function(dir, done) {
+var walker = function (dir, done) {
   var results = [];
 
-  fs.readdir(dir, function(err, list) {
+  fs.readdir(dir, function (err, list) {
     if (err) return done(err);
 
     var i = 0;
@@ -294,9 +265,9 @@ var walker = function(dir, done) {
 
       file = dir + '/' + file;
 
-      fs.stat(file, function(err, stat) {
+      fs.stat(file, function (err, stat) {
         if (stat && stat.isDirectory()) {
-          walker(file, function(err, res) {
+          walker(file, function (err, res) {
             results = results.concat(res);
 
             next();
@@ -311,11 +282,12 @@ var walker = function(dir, done) {
   });
 };
 
-var capitalize = function(name) {
+var capitalize = function (name) {
   var newName = '';
+
   name = name.replace(/-/gi, ' ');
   pieces = name.split(' ');
-  pieces.forEach(function(word) {
+  pieces.forEach(function (word) {
     newName += word.charAt(0).toUpperCase() + word.slice(1) + ' ';
   });
 
@@ -326,6 +298,6 @@ var capitalize = function(name) {
 getSourceCode();
 
 //Start web app.
-app.listen(app.get('port'), function() {
+app.listen(app.get('port'), function () {
   console.log('Node app is running at localhost:' + app.get('port'));
 });
