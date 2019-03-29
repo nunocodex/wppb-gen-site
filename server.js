@@ -5,7 +5,7 @@
  */
 
 var express = require('express');
-var app = express();
+var project = express();
 var port = process.env.PORT || 3000;
 var path = require('path');
 var ghdownload = require('github-download');
@@ -18,16 +18,17 @@ var EasyZip = require('easy-zip').EasyZip;
 var CronJob = require('cron').CronJob;
 var ua = require('universal-analytics');
 
-app.set('port', port);
-app.set('view engine', 'ejs');
-app.set('views', path.join(__dirname, 'views'));
+project.set('port', port);
+project.set('view engine', 'ejs');
+project.set('views', path.join(__dirname, 'views'));
 
-app.use(express.static(__dirname + '/public'));
-app.use(bodyParser.urlencoded({
+project.use(express.static(__dirname + '/public'));
+project.use(bodyParser.urlencoded({
   extended: true
 }));
 
-app
+/*
+project
   .route(
     '/.well-known/acme-challenge/miU-q9A8ox1btoayRB8tM6wcWPisl42aR4wnixiK2UU'
   )
@@ -36,8 +37,9 @@ app
       'miU-q9A8ox1btoayRB8tM6wcWPisl42aR4wnixiK2UU.9s9UoMhX5iRzhJpZG6oAd-7PRFIBTPxbwd7nVTPfGcM'
     );
   });
+*/
 
-app
+project
   .route('/')
   //GET REQUEST DRAW THE HOME PAGE
   .get(function (req, res) {
@@ -47,7 +49,12 @@ app
   .post(function (req, res) {
     var origin = process.cwd() + '/source/';
 
-    var plugin_slug = String(data.slug).toLowerCase();
+    var data = req.body;
+
+    console.log(req);
+
+    var plugin_slug = (String(data.slug).length) ? String(data.slug).toLowerCase() : '';
+
     var plugin_name = String(data.name);
     var plugin_uri = String(data.uri);
     var plugin_description = String(data.description);
@@ -62,7 +69,6 @@ app
     var plugin_author_full = plugin_author + ' <' + plugin_author_email + '>';
 
     var destination = process.cwd() + '/tmp/' + plugin_slug + '-' + new Date().getTime();
-    var data = req.body;
     var visitor = ua('UA-XXXXXXXX-1');
 
     //Track Event
@@ -296,7 +302,7 @@ var capitalize = function (name) {
 // On Init get initial code
 getSourceCode();
 
-//Start web app.
-app.listen(app.get('port'), function () {
-  console.log('Node app is running at localhost:' + app.get('port'));
+//Start web project.
+project.listen(project.get('port'), function () {
+  console.log('Node app is running at localhost:' + project.get('port'));
 });
