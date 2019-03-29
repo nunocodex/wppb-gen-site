@@ -41,8 +41,7 @@ app
   .route('/')
   //GET REQUEST DRAW THE HOME PAGE
   .get(function (req, res) {
-    res.send('Please visit <a href="https://wppb.me">https://wppb.me</a>');
-    //res.redirect('https://wppb.me');
+    res.render('index');
   }) // END GET ROUTE
 
   .post(function (req, res) {
